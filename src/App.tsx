@@ -31,6 +31,7 @@ import SitterDashboard from './components/SitterDashboard';
 import OwnerDashboard from './components/OwnerDashboard';
 import PersonalityMatcher from './components/PersonalityMatcher';
 import SitterChatView from './components/SitterChatView';
+import RegistrationModal from './components/RegistrationModal';
 
 // Cute Dog Image Assets
 import happyDogsHero from './assets/images/happy_dogs_hero_1779420349432.png';
@@ -58,6 +59,16 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_REVIEWS;
   });
 
+  const [showRegistration, setShowRegistration] = useState(false);
+  const [customPups, setCustomPups] = useState<any[]>(() => {
+    const saved = localStorage.getItem('barksitter_custom_pups_pool');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [registeredOwner, setRegisteredOwner] = useState<any>(() => {
+    const saved = localStorage.getItem('barksitter_registered_owner');
+    return saved ? JSON.parse(saved) : null;
+  });
+
   // State Persistence watchers
   useEffect(() => {
     localStorage.setItem('barksitter_sitters_pool', JSON.stringify(sitters));
@@ -70,6 +81,14 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('barksitter_reviews_pool', JSON.stringify(reviews));
   }, [reviews]);
+
+  useEffect(() => {
+    localStorage.setItem('barksitter_custom_pups_pool', JSON.stringify(customPups));
+  }, [customPups]);
+
+  useEffect(() => {
+    localStorage.setItem('barksitter_registered_owner', JSON.stringify(registeredOwner));
+  }, [registeredOwner]);
 
   // Search/Filters states
   const [searchArea, setSearchArea] = useState<string>('All');
@@ -95,6 +114,30 @@ export default function App() {
   // Callback to update Sitter list
   const handleUpdateSitterProfile = (updatedProfile: SitterProfile) => {
     setSitters((prev) => prev.map((s) => (s.id === updatedProfile.id ? updatedProfile : s)));
+  };
+
+  const handleRegisterSitter = (newSitter: SitterProfile) => {
+    setSitters((prev) => [newSitter, ...prev]);
+    setShowRegistration(false);
+    // Auto highlight/select the new sitter to let user see their work instantly!
+    setSelectedSitterId(newSitter.id);
+    setDetailSitterId(newSitter.id);
+    alert(`🎉 Congratulations! Sitter profile "${newSitter.name}" has been successfully verified & listed live on the caregiving marketplace map and board!`);
+  };
+
+  const handleRegisterOwner = (ownerData: any) => {
+    setRegisteredOwner(ownerData);
+    const newDogObj = {
+      id: `pup-custom-${Date.now()}`,
+      name: ownerData.dogName,
+      breed: ownerData.dogBreed,
+      size: ownerData.dogSize,
+      bio: ownerData.dogBio || 'A highly loved registered pup companion.',
+      specialNeeds: ownerData.dogSpecialNeeds
+    };
+    setCustomPups((prev) => [newDogObj, ...prev]);
+    setShowRegistration(false);
+    alert(`🐶 Congratulations! Owner profile "${ownerData.name}" and your pup "${ownerData.dogName}" have been registered successfully! Buddy is now accompanied by your newly registered pup.`);
   };
 
   // Create Stay Booking request
@@ -207,7 +250,7 @@ export default function App() {
     <div className="min-h-screen bg-[#faf9f6] text-slate-800 flex flex-col font-sans selection:bg-fuchsia-100 selection:text-fuchsia-900 leading-normal antialiased">
       
       {/* Brand Header */}
-      <Header currentRole={role} setRole={setRole} userEmail={USER_EMAIL} />
+      <Header currentRole={role} setRole={setRole} userEmail={USER_EMAIL} onOpenRegister={() => setShowRegistration(true)} />
 
       {/* Main Content View with transition constraints */}
       <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex-grow">
@@ -481,6 +524,23 @@ export default function App() {
                         <p className="text-[10px] text-slate-400 mt-1 font-medium leading-snug">Marcus's sweet lap adventurer</p>
                       </div>
                     </div>
+
+                    {/* Custom Registered Pups */}
+                    {customPups.map((pup) => (
+                      <div key={pup.id} className="bg-gradient-to-tr from-violet-50/40 to-fuchsia-50/40 rounded-2xl p-3.5 border border-violet-150 flex items-center space-x-3.5 hover:shadow-xs transition duration-200 animate-fade-in">
+                        <div className="h-14 w-14 rounded-xl shrink-0 shadow-sm border border-white bg-white flex items-center justify-center text-3xl">
+                          🐕
+                        </div>
+                        <div className="text-left">
+                          <div className="flex items-center space-x-1.5">
+                            <h5 className="text-xs font-extrabold text-slate-800 leading-none">{pup.name}</h5>
+                            <span className="text-[8px] bg-violet-100 text-violet-700 px-1.5 py-0.5 rounded-full font-bold font-mono uppercase tracking-wider block leading-none">Vetted Pup</span>
+                          </div>
+                          <p className="text-[9px] text-violet-600 font-mono tracking-wider font-extrabold uppercase mt-1">{pup.breed}</p>
+                          <p className="text-[10px] text-slate-550 mt-1 font-medium leading-snug italic truncate max-w-[180px]">{pup.bio}</p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -520,6 +580,7 @@ export default function App() {
                 onCancelBooking={handleCancelBooking}
                 userEmail={USER_EMAIL}
                 onChatWithSitter={setChattingSitterId}
+                registeredOwner={registeredOwner}
               />
             </div>
 
@@ -592,6 +653,15 @@ export default function App() {
           sitter={chattingSitter}
           userEmail={USER_EMAIL}
           onClose={() => setChattingSitterId(null)}
+        />
+      )}
+
+      {showRegistration && (
+        <RegistrationModal
+          onClose={() => setShowRegistration(false)}
+          onRegisterSitter={handleRegisterSitter}
+          onRegisterOwner={handleRegisterOwner}
+          currentEmail={USER_EMAIL}
         />
       )}
 

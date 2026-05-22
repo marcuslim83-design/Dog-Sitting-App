@@ -13,6 +13,7 @@ interface OwnerDashboardProps {
   onCancelBooking: (id: string) => void;
   userEmail: string;
   onChatWithSitter?: (sitterId: string) => void;
+  registeredOwner?: any;
 }
 
 export default function OwnerDashboard({
@@ -22,7 +23,8 @@ export default function OwnerDashboard({
   onAddReview,
   onCancelBooking,
   userEmail,
-  onChatWithSitter
+  onChatWithSitter,
+  registeredOwner
 }: OwnerDashboardProps) {
   // Inbox / Chat simulation state
   const [activeChatSitterId, setActiveChatSitterId] = useState<string | null>(null);
@@ -380,20 +382,33 @@ export default function OwnerDashboard({
           {/* Active Pup Profile Card */}
           <div className="bg-gradient-to-tr from-violet-600/5 to-fuchsia-600/5 border border-violet-100 rounded-3xl p-5 mb-5 space-y-4 text-left shadow-xs">
             <div className="flex items-center space-x-4">
-              <div className="h-16 w-16 rounded-2xl overflow-hidden shrink-0 border border-violet-200/60 shadow-md relative">
-                <img
-                  src={cutePoodleBuddy}
-                  alt="My Dog Buddy"
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover"
-                />
+              <div className="h-16 w-16 rounded-2xl overflow-hidden bg-white shrink-0 border border-violet-200/60 shadow-md relative flex items-center justify-center">
+                {registeredOwner ? (
+                  <span className="text-3xl">🐕</span>
+                ) : (
+                  <img
+                    src={cutePoodleBuddy}
+                    alt="My Dog Buddy"
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover"
+                  />
+                )}
               </div>
               <div className="text-left flex-grow">
                 <span className="bg-fuchsia-100 text-fuchsia-700 text-[8px] font-black uppercase font-mono tracking-widest px-2 py-0.5 rounded-lg inline-block">
                   Your Vetted Pup
                 </span>
-                <h4 className="text-base font-black text-slate-800 mt-1">Buddy Lim</h4>
-                <p className="text-[11px] text-slate-500 font-bold">Toy Poodle • Apricot Fur</p>
+                <h4 className="text-base font-black text-slate-800 mt-1">
+                  {registeredOwner ? registeredOwner.dogName : 'Buddy Lim'}
+                </h4>
+                <p className="text-[11px] text-slate-500 font-bold">
+                  {registeredOwner ? `${registeredOwner.dogBreed} • Size: ${registeredOwner.dogSize}` : 'Toy Poodle • Apricot Fur'}
+                </p>
+                {registeredOwner && registeredOwner.dogSpecialNeeds && (
+                  <p className="text-[10px] text-violet-650 font-extrabold mt-1 leading-tight">
+                    ⚠️ {registeredOwner.dogSpecialNeeds}
+                  </p>
+                )}
               </div>
             </div>
             
