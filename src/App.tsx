@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase, saveEntry, getEntries, safeParse } from './lib/supabaseClient';
+import { supabase, saveEntry, getEntries, safeParse, isSupabaseConfigured } from './lib/supabaseClient';
 import { DiscussionEmbed } from 'disqus-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -158,43 +158,48 @@ export default function App() {
 
     initSupabaseData();
 
-    // Subscribe with .channel().on() so the UI updates with real-time events
-    const channel = supabase
-      .channel('entries_realtime_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'entries' },
-        (payload) => {
-          if (!active) return;
-          console.log('Real-time database payload received:', payload);
-          const newRow = payload.new as any;
-          if (newRow) {
-            const key = newRow.id || newRow.key;
-            const val = newRow.value !== undefined ? newRow.value : newRow.data;
-            if (key) {
-              const parsedVal = safeParse(val);
-              remoteUpdateRef.current[key] = true;
-              
-              if (key === 'barksitter_sitters_pool') {
-                setSitters(parsedVal);
-              } else if (key === 'barksitter_bookings_pool') {
-                setBookings(parsedVal);
-              } else if (key === 'barksitter_reviews_pool') {
-                setReviews(parsedVal);
-              } else if (key === 'barksitter_custom_pups_pool') {
-                setCustomPups(parsedVal || []);
-              } else if (key === 'barksitter_registered_owner') {
-                setRegisteredOwner(parsedVal);
+    // Subscribe with .channel().on() so the UI updates with real-time events (if configured)
+    let channel: any = null;
+    if (isSupabaseConfigured) {
+      channel = supabase
+        .channel('entries_realtime_changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'entries' },
+          (payload) => {
+            if (!active) return;
+            console.log('Real-time database payload received:', payload);
+            const newRow = payload.new as any;
+            if (newRow) {
+              const key = newRow.id || newRow.key;
+              const val = newRow.value !== undefined ? newRow.value : newRow.data;
+              if (key) {
+                const parsedVal = safeParse(val);
+                remoteUpdateRef.current[key] = true;
+                
+                if (key === 'barksitter_sitters_pool') {
+                  setSitters(parsedVal);
+                } else if (key === 'barksitter_bookings_pool') {
+                  setBookings(parsedVal);
+                } else if (key === 'barksitter_reviews_pool') {
+                  setReviews(parsedVal);
+                } else if (key === 'barksitter_custom_pups_pool') {
+                  setCustomPups(parsedVal || []);
+                } else if (key === 'barksitter_registered_owner') {
+                  setRegisteredOwner(parsedVal);
+                }
               }
             }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    }
 
     return () => {
       active = false;
-      channel.unsubscribe();
+      if (channel) {
+        channel.unsubscribe();
+      }
     };
   }, []);
 

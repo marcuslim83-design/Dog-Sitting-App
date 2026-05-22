@@ -3,14 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 const rawUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const rawAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-const supabaseUrl = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) 
+export const isSupabaseConfigured = !!(
+  rawUrl && 
+  (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) && 
+  rawAnonKey
+);
+
+const supabaseUrl = isSupabaseConfigured 
   ? rawUrl 
   : 'https://placeholder-project-not-configured.supabase.co';
 
 const supabaseAnonKey = rawAnonKey || 'placeholder-anonymous-key-not-provided';
 
-if (!rawUrl || !rawAnonKey) {
-  console.warn('Supabase credentials are not fully configured or are invalid in your environment configuration.');
+if (!isSupabaseConfigured) {
+  console.warn('Supabase credentials are not fully configured or are invalid in your environment configuration. Running in Local Storage sandbox fallback.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -27,6 +33,9 @@ export function safeParse(val: any): any {
 }
 
 export async function saveEntry(key: string, data: any) {
+  if (!isSupabaseConfigured) {
+    return { success: false, error: new Error('Supabase is not configured.') };
+  }
   try {
     // We try to upsert based on standard database schema options:
     // Option A: { id: key, value: data }
@@ -58,6 +67,9 @@ export async function saveEntry(key: string, data: any) {
 }
 
 export async function getEntries() {
+  if (!isSupabaseConfigured) {
+    return { success: false, data: [], error: new Error('Supabase is not configured.') };
+  }
   try {
     const { data, error } = await supabase.from('entries').select('*');
     if (error) {
