@@ -1,0 +1,6 @@
+{
+  "name": "Dog Sitting Marketplace",
+  "description": "A marketplace for pet owners to find and book local dog sitters, and for sitters to advertise services and manage bookings.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
