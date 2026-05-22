@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase, saveEntry, getEntries, safeParse } from './lib/supabaseClient';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search,
@@ -44,51 +45,192 @@ export default function App() {
   // Global React States synced with client localStorage for instant persistence!
   const [role, setRole] = useState<'owner' | 'sitter'>('owner');
 
-  const [sitters, setSitters] = useState<SitterProfile[]>(() => {
-    const saved = localStorage.getItem('barksitter_sitters_pool');
-    return saved ? JSON.parse(saved) : INITIAL_SITTERS;
-  });
-
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    const saved = localStorage.getItem('barksitter_bookings_pool');
-    return saved ? JSON.parse(saved) : INITIAL_BOOKINGS;
-  });
-
-  const [reviews, setReviews] = useState<Review[]>(() => {
-    const saved = localStorage.getItem('barksitter_reviews_pool');
-    return saved ? JSON.parse(saved) : INITIAL_REVIEWS;
-  });
-
+  const [loading, setLoading] = useState(true);
+  const [sitters, setSitters] = useState<SitterProfile[]>(INITIAL_SITTERS);
+  const [bookings, setBookings] = useState<Booking[]>(INITIAL_BOOKINGS);
+  const [reviews, setReviews] = useState<Review[]>(INITIAL_REVIEWS);
   const [showRegistration, setShowRegistration] = useState(false);
-  const [customPups, setCustomPups] = useState<any[]>(() => {
-    const saved = localStorage.getItem('barksitter_custom_pups_pool');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [registeredOwner, setRegisteredOwner] = useState<any>(() => {
-    const saved = localStorage.getItem('barksitter_registered_owner');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [customPups, setCustomPups] = useState<any[]>([]);
+  const [registeredOwner, setRegisteredOwner] = useState<any>(null);
 
-  // State Persistence watchers
+  // Robust Supabase error & fallback states
+  const [supabaseError, setSupabaseError] = useState<any>(null);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
+  const [showSupabaseSetupModal, setShowSupabaseSetupModal] = useState(false);
+  const [sqlCopied, setSqlCopied] = useState(false);
+
+  const remoteUpdateRef = useRef<Record<string, boolean>>({});
+
   useEffect(() => {
+    let active = true;
+    async function initSupabaseData() {
+      const result = await getEntries();
+      if (!active) return;
+
+      if (result.success) {
+        const dbData = result.data;
+        
+        // Populate or initialize pool entries
+        if (dbData['barksitter_sitters_pool'] !== undefined) {
+          setSitters(dbData['barksitter_sitters_pool']);
+        } else {
+          await saveEntry('barksitter_sitters_pool', INITIAL_SITTERS);
+        }
+
+        if (dbData['barksitter_bookings_pool'] !== undefined) {
+          setBookings(dbData['barksitter_bookings_pool']);
+        } else {
+          await saveEntry('barksitter_bookings_pool', INITIAL_BOOKINGS);
+        }
+
+        if (dbData['barksitter_reviews_pool'] !== undefined) {
+          setReviews(dbData['barksitter_reviews_pool']);
+        } else {
+          await saveEntry('barksitter_reviews_pool', INITIAL_REVIEWS);
+        }
+
+        if (dbData['barksitter_custom_pups_pool'] !== undefined) {
+          setCustomPups(dbData['barksitter_custom_pups_pool']);
+        } else {
+          await saveEntry('barksitter_custom_pups_pool', []);
+        }
+
+        if (dbData['barksitter_registered_owner'] !== undefined) {
+          setRegisteredOwner(dbData['barksitter_registered_owner']);
+        } else {
+          await saveEntry('barksitter_registered_owner', null);
+        }
+      } else {
+        console.warn('Failed to load initial Supabase entries. Falling back to Local Storage client sandbox.', result.error);
+        setSupabaseError(result.error);
+        setIsUsingFallback(true);
+
+        // Load values from Local Storage
+        const savedSitters = localStorage.getItem('barksitter_sitters_pool');
+        if (savedSitters) {
+          setSitters(safeParse(savedSitters));
+        }
+
+        const savedBookings = localStorage.getItem('barksitter_bookings_pool');
+        if (savedBookings) {
+          setBookings(safeParse(savedBookings));
+        }
+
+        const savedReviews = localStorage.getItem('barksitter_reviews_pool');
+        if (savedReviews) {
+          setReviews(safeParse(savedReviews));
+        }
+
+        const savedPups = localStorage.getItem('barksitter_custom_pups_pool');
+        if (savedPups) {
+          setCustomPups(safeParse(savedPups));
+        }
+
+        const savedOwner = localStorage.getItem('barksitter_registered_owner');
+        if (savedOwner) {
+          setRegisteredOwner(safeParse(savedOwner));
+        }
+      }
+      setLoading(false);
+    }
+
+    initSupabaseData();
+
+    // Subscribe with .channel().on() so the UI updates with real-time events
+    const channel = supabase
+      .channel('entries_realtime_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'entries' },
+        (payload) => {
+          if (!active) return;
+          console.log('Real-time database payload received:', payload);
+          const newRow = payload.new as any;
+          if (newRow) {
+            const key = newRow.id || newRow.key;
+            const val = newRow.value !== undefined ? newRow.value : newRow.data;
+            if (key) {
+              const parsedVal = safeParse(val);
+              remoteUpdateRef.current[key] = true;
+              
+              if (key === 'barksitter_sitters_pool') {
+                setSitters(parsedVal);
+              } else if (key === 'barksitter_bookings_pool') {
+                setBookings(parsedVal);
+              } else if (key === 'barksitter_reviews_pool') {
+                setReviews(parsedVal);
+              } else if (key === 'barksitter_custom_pups_pool') {
+                setCustomPups(parsedVal || []);
+              } else if (key === 'barksitter_registered_owner') {
+                setRegisteredOwner(parsedVal);
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      channel.unsubscribe();
+    };
+  }, []);
+
+  // State Persistence watchers to Supabase & LocalStorage (keeps data safe both ways)
+  useEffect(() => {
+    if (loading) return;
     localStorage.setItem('barksitter_sitters_pool', JSON.stringify(sitters));
-  }, [sitters]);
+    if (isUsingFallback) return;
+    if (remoteUpdateRef.current['barksitter_sitters_pool']) {
+      remoteUpdateRef.current['barksitter_sitters_pool'] = false;
+      return;
+    }
+    saveEntry('barksitter_sitters_pool', sitters);
+  }, [sitters, loading, isUsingFallback]);
 
   useEffect(() => {
+    if (loading) return;
     localStorage.setItem('barksitter_bookings_pool', JSON.stringify(bookings));
-  }, [bookings]);
+    if (isUsingFallback) return;
+    if (remoteUpdateRef.current['barksitter_bookings_pool']) {
+      remoteUpdateRef.current['barksitter_bookings_pool'] = false;
+      return;
+    }
+    saveEntry('barksitter_bookings_pool', bookings);
+  }, [bookings, loading, isUsingFallback]);
 
   useEffect(() => {
+    if (loading) return;
     localStorage.setItem('barksitter_reviews_pool', JSON.stringify(reviews));
-  }, [reviews]);
+    if (isUsingFallback) return;
+    if (remoteUpdateRef.current['barksitter_reviews_pool']) {
+      remoteUpdateRef.current['barksitter_reviews_pool'] = false;
+      return;
+    }
+    saveEntry('barksitter_reviews_pool', reviews);
+  }, [reviews, loading, isUsingFallback]);
 
   useEffect(() => {
+    if (loading) return;
     localStorage.setItem('barksitter_custom_pups_pool', JSON.stringify(customPups));
-  }, [customPups]);
+    if (isUsingFallback) return;
+    if (remoteUpdateRef.current['barksitter_custom_pups_pool']) {
+      remoteUpdateRef.current['barksitter_custom_pups_pool'] = false;
+      return;
+    }
+    saveEntry('barksitter_custom_pups_pool', customPups);
+  }, [customPups, loading, isUsingFallback]);
 
   useEffect(() => {
+    if (loading) return;
     localStorage.setItem('barksitter_registered_owner', JSON.stringify(registeredOwner));
-  }, [registeredOwner]);
+    if (isUsingFallback) return;
+    if (remoteUpdateRef.current['barksitter_registered_owner']) {
+      remoteUpdateRef.current['barksitter_registered_owner'] = false;
+      return;
+    }
+    saveEntry('barksitter_registered_owner', registeredOwner);
+  }, [registeredOwner, loading, isUsingFallback]);
 
   // Search/Filters states
   const [searchArea, setSearchArea] = useState<string>('All');
@@ -246,11 +388,49 @@ export default function App() {
   const bookingSitter = sitters.find((s) => s.id === bookingSitterId);
   const chattingSitter = sitters.find((s) => s.id === chattingSitterId);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#faf9f6] text-slate-800 flex flex-col items-center justify-center font-sans antialiased">
+        <div className="text-center space-y-4 animate-pulse">
+          <div className="relative inline-flex mb-2">
+            <span className="flex h-10 w-10">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-fuchsia-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-10 w-10 bg-fuchsia-100 border border-fuchsia-200 items-center justify-center text-xl">🐶</span>
+            </span>
+          </div>
+          <h3 className="text-sm font-bold text-slate-700 tracking-tight font-mono uppercase">Connecting to Database...</h3>
+          <p className="text-xs text-slate-400 max-w-xs leading-normal">Fetching secure, real-time sitter records &amp; active bookings.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#faf9f6] text-slate-800 flex flex-col font-sans selection:bg-fuchsia-100 selection:text-fuchsia-900 leading-normal antialiased">
       
       {/* Brand Header */}
       <Header currentRole={role} setRole={setRole} userEmail={USER_EMAIL} onOpenRegister={() => setShowRegistration(true)} />
+
+      {/* Database Warning Banner */}
+      {isUsingFallback && (
+        <div className="bg-amber-50 border-b border-amber-200/80 py-3 px-4 sm:px-6 lg:px-8">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+            <div className="flex items-center space-x-2 text-amber-700">
+              <span className="text-base text-amber-600">⚠️</span>
+              <p className="text-xs font-semibold">
+                <span className="font-bold">Database Config:</span> The Supabase <code className="bg-amber-100/90 px-1.5 py-0.5 rounded font-mono text-[10px]">entries</code> table was not found or failed to load. Running in local sandbox mode.
+              </p>
+            </div>
+            <button
+              id="btn-show-sql-guide"
+              onClick={() => setShowSupabaseSetupModal(true)}
+              className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold cursor-pointer transition shadow-xs whitespace-nowrap"
+            >
+              Get SQL Setup Query
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Content View with transition constraints */}
       <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex-grow">
@@ -663,6 +843,110 @@ export default function App() {
           onRegisterOwner={handleRegisterOwner}
           currentEmail={USER_EMAIL}
         />
+      )}
+
+      {showSupabaseSetupModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative border border-slate-100/80 my-8 text-left">
+            <button
+              id="close-sql-guide"
+              onClick={() => setShowSupabaseSetupModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-2 rounded-full hover:bg-slate-100 transition cursor-pointer"
+            >
+              ✕
+            </button>
+            
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="bg-violet-100 text-violet-700 p-2 rounded-xl text-lg">
+                🔌
+              </div>
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900 font-sans tracking-tight">Supabase Database Setup Guide</h3>
+                <p className="text-xs text-slate-500 font-medium">Create your database table to unlock production persistence &amp; real-time feeds!</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Copy the SQL block below and run it in the <span className="font-bold text-violet-700">SQL Editor</span> of your Supabase project dashboard to generate the corresponding <code className="bg-slate-100 font-mono text-[10px] px-1 py-0.5 rounded">entries</code> table:
+              </p>
+
+              <div className="relative">
+                <pre className="bg-slate-950 text-slate-200 p-4 rounded-xl font-mono text-[10px] overflow-x-auto max-h-[300px] leading-relaxed border border-slate-800">
+{`-- Create table
+CREATE TABLE IF NOT EXISTS public.entries (
+    id TEXT PRIMARY KEY,
+    value JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::TEXT, NOW()) NOT NULL
+);
+
+-- Enable Row Level Security (RLS) and allow public/anonymous reads & updates
+ALTER TABLE public.entries ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow anon select" ON public.entries FOR SELECT USING (true);
+CREATE POLICY "Allow anon insert" ON public.entries FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow anon update" ON public.entries FOR UPDATE USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon delete" ON public.entries FOR DELETE USING (true);
+
+-- Enable Realtime so live changes broadcast across all browser sessions instantly
+ALTER TABLE public.entries REPLICA IDENTITY FULL;
+
+-- Setup publication
+DROP PUBLICATION IF EXISTS supabase_realtime;
+CREATE PUBLICATION supabase_realtime FOR ALL TABLES;`}
+                </pre>
+                
+                <button
+                  id="btn-copy-sql"
+                  onClick={() => {
+                    const sqlText = `CREATE TABLE IF NOT EXISTS public.entries (
+    id TEXT PRIMARY KEY,
+    value JSONB NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::TEXT, NOW()) NOT NULL
+);
+
+ALTER TABLE public.entries ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow anon select" ON public.entries FOR SELECT USING (true);
+CREATE POLICY "Allow anon insert" ON public.entries FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow anon update" ON public.entries FOR UPDATE USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon delete" ON public.entries FOR DELETE USING (true);
+
+ALTER TABLE public.entries REPLICA IDENTITY FULL;
+
+DROP PUBLICATION IF EXISTS supabase_realtime;
+CREATE PUBLICATION supabase_realtime FOR ALL TABLES;`;
+                    navigator.clipboard.writeText(sqlText);
+                    setSqlCopied(true);
+                    setTimeout(() => setSqlCopied(false), 2000);
+                  }}
+                  className="absolute top-2 right-2 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-[10px] font-bold shadow-md cursor-pointer transition active:scale-95"
+                >
+                  {sqlCopied ? '✓ Copied SQL!' : '📋 Copy SQL Query'}
+                </button>
+              </div>
+
+              <div className="bg-slate-50 rounded-2xl p-4 border border-violet-100 text-xs space-y-2">
+                <h4 className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <span>🚀</span> Why is this needed?
+                </h4>
+                <p className="text-slate-600 leading-normal">
+                  In order to replace temporary local storages, your Supabase project needs a key-value style JSON table called <code className="bg-slate-200/50 px-1 py-0.5 rounded text-[10px] text-slate-800">entries</code>. If you haven't run the SQL script above, the applet automatically falls back to Local Storage so you don't lose anything.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                id="btn-dismiss-sql-guide"
+                onClick={() => setShowSupabaseSetupModal(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+              >
+                Done / Use Sandbox Backing
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

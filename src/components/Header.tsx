@@ -67,8 +67,8 @@ export default function Header({ currentRole, setRole, userEmail, onOpenRegister
           </button>
 
           <div className="hidden md:flex flex-col text-right">
-            <span className="text-xs font-semibold text-slate-700">{userEmail.split('@')[0]}</span>
-            <span className="text-[10px] text-slate-400 font-mono">{userEmail}</span>
+            <span className="text-[9px] text-slate-400 font-mono font-bold uppercase tracking-wider">Username</span>
+            <span className="text-xs font-bold text-slate-700 font-mono">{userEmail.split('@')[0]}</span>
           </div>
           <div className="h-9 w-9 rounded-full bg-fuchsia-100 border border-fuchsia-200 flex items-center justify-center text-sm font-bold text-fuchsia-700">
             🐶
