@@ -1,10 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const rawUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const rawAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Supabase credentials are not fully configured in your environment config.');
+const supabaseUrl = (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) 
+  ? rawUrl 
+  : 'https://placeholder-project-not-configured.supabase.co';
+
+const supabaseAnonKey = rawAnonKey || 'placeholder-anonymous-key-not-provided';
+
+if (!rawUrl || !rawAnonKey) {
+  console.warn('Supabase credentials are not fully configured or are invalid in your environment configuration.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
