@@ -29,6 +29,7 @@ import SitterDetailModal from './components/SitterDetailModal';
 import BookingModal from './components/BookingModal';
 import SitterDashboard from './components/SitterDashboard';
 import OwnerDashboard from './components/OwnerDashboard';
+import PersonalityMatcher from './components/PersonalityMatcher';
 
 // Cute Dog Image Assets
 import happyDogsHero from './assets/images/happy_dogs_hero_1779420349432.png';
@@ -338,9 +339,9 @@ export default function App() {
                         className="mt-1 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-semibold px-3 py-2 rounded-xl w-full text-slate-600 outline-none cursor-pointer"
                       >
                         <option value="All">Any Size Class</option>
-                        <option value="small">Small (&lt;25 lbs)</option>
-                        <option value="medium">Medium (25-50 lbs)</option>
-                        <option value="large">Large (50+ lbs)</option>
+                        <option value="small">Small (&lt;11 kg)</option>
+                        <option value="medium">Medium (11-23 kg)</option>
+                        <option value="large">Large (23+ kg)</option>
                       </select>
                     </div>
 
@@ -383,31 +384,54 @@ export default function App() {
 
                 </div>
 
+                {/* Interactive dog "Personality Matcher" */}
+                <div className="mt-6 mb-8">
+                  <PersonalityMatcher
+                    sitters={sitters}
+                    onApplyFilter={(keyword, maxSize) => {
+                      setKeywordQuery(keyword);
+                      if (maxSize !== 'All') {
+                        setDogSizeFilter(maxSize);
+                      }
+                    }}
+                    onBookSitter={(sitterId) => {
+                      setBookingSitterId(sitterId);
+                    }}
+                  />
+                </div>
+
                 {/* Sitter Listing grid cards list */}
-                {filteredSitters.length === 0 ? (
-                  <div className="bg-white border border-slate-100 rounded-3xl p-12 text-center text-slate-400 flex flex-col items-center">
-                    <Dog className="h-12 w-12 text-slate-300 animate-pulse mb-3" />
-                    <p className="text-sm font-extrabold text-slate-700">No sitters match your criteria</p>
-                    <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                      Try widening your neighborhood area, service types, or max daily price filters.
-                    </p>
+                <div id="sitters-heading" className="scroll-mt-24 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase text-slate-400 font-mono tracking-wider">
+                      Explore Local Caregivers Live Listing
+                    </h3>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {filteredSitters.map((sitter) => (
-                      <SitterCard
-                        key={sitter.id}
-                        sitter={sitter}
-                        isSelected={selectedSitterId === sitter.id}
-                        onSelect={() => {
-                          setSelectedSitterId(sitter.id);
-                          setDetailSitterId(sitter.id);
-                        }}
-                        onBook={() => setBookingSitterId(sitter.id)}
-                      />
-                    ))}
-                  </div>
-                )}
+                  {filteredSitters.length === 0 ? (
+                    <div className="bg-white border border-slate-100 rounded-3xl p-12 text-center text-slate-400 flex flex-col items-center">
+                      <Dog className="h-12 w-12 text-slate-300 animate-pulse mb-3" />
+                      <p className="text-sm font-extrabold text-slate-700">No sitters match your criteria</p>
+                      <p className="text-xs text-slate-400 mt-1 max-w-sm">
+                        Try widening your neighborhood area, service types, or max daily price filters.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {filteredSitters.map((sitter) => (
+                        <SitterCard
+                          key={sitter.id}
+                          sitter={sitter}
+                          isSelected={selectedSitterId === sitter.id}
+                          onSelect={() => {
+                            setSelectedSitterId(sitter.id);
+                            setDetailSitterId(sitter.id);
+                          }}
+                          onBook={() => setBookingSitterId(sitter.id)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 {/* Community Certified Packs Gallery */}
                 <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs text-left mt-6 space-y-4">

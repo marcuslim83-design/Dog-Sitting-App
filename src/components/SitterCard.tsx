@@ -68,7 +68,7 @@ export default function SitterCard({ sitter, isSelected, onSelect, onBook }: Sit
           ))}
           <span className="text-[10px] font-bold text-fuchsia-700 bg-fuchsia-50 px-2 py-0.5 rounded-md flex items-center max-w-fit">
             <Dog className="h-2.5 w-2.5 mr-0.5 text-fuchsia-600" />
-            Up to {sitter.maxDogSize === 'large' ? 'Large (50lbs+)' : sitter.maxDogSize === 'medium' ? 'Med (25-50lbs)' : 'Small (<25lbs)'}
+            Up to {sitter.maxDogSize === 'large' ? 'Large (23kg+)' : sitter.maxDogSize === 'medium' ? 'Med (11-23kg)' : 'Small (<11kg)'}
           </span>
         </div>
 

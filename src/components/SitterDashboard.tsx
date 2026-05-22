@@ -312,9 +312,9 @@ export default function SitterDashboard({
                   onChange={(e) => setMaxDogSize(e.target.value as DogSize)}
                   className="w-full bg-slate-50 border border-slate-200 focus:border-violet-500 focus:bg-white text-xs rounded-xl px-3 py-2.5 outline-none font-semibold text-slate-700"
                 >
-                  <option value="small">Small Dogs Only (&lt;25 lbs)</option>
-                  <option value="medium">Medium Size Acceptable (&lt;50 lbs)</option>
-                  <option value="large">Large Sizes Welcome (50+ lbs)</option>
+                  <option value="small">Small Dogs Only (&lt;11 kg)</option>
+                  <option value="medium">Medium Size Acceptable (&lt;23 kg)</option>
+                  <option value="large">Large Sizes Welcome (23+ kg)</option>
                 </select>
               </div>
 

@@ -132,9 +132,9 @@ export default function BookingModal({
                 onChange={(e) => setDogSize(e.target.value as DogSize)}
                 className="w-full bg-slate-50 border border-slate-200 focus:border-violet-500 focus:bg-white text-sm rounded-xl px-3 py-2.5 outline-none font-semibold text-slate-700 transition"
               >
-                <option value="small">Small (&lt;25 lbs)</option>
-                <option value="medium">Medium (25-50 lbs)</option>
-                <option value="large">Large (50+ lbs)</option>
+                <option value="small">Small (&lt;11 kg)</option>
+                <option value="medium">Medium (11-23 kg)</option>
+                <option value="large">Large (23+ kg)</option>
               </select>
             </div>
           </div>
