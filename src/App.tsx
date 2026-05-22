@@ -867,6 +867,23 @@ export default function App() {
           </div>
         )}
 
+        {/* Global Disqus Discussion Section at the bottom of the web page */}
+        <div className="mt-16 bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-xs text-left">
+          <div className="border-b border-slate-100 pb-4 mb-6">
+            <h3 className="text-base font-extrabold text-slate-800 font-sans tracking-tight">Community Discussion Board (Disqus)</h3>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">Have questions or want to connect with other neighborhood pet owners and sitters? Start typing below!</p>
+          </div>
+          <div className="min-h-[300px]">
+            <DisqusForum
+              article={{
+                url: typeof window !== 'undefined' ? window.location.href : 'https://barksitter-local-sit.example.com',
+                id: 'barksitter-global-forum-bottom',
+                title: 'BarkSitter Pet Community Global Board'
+              }}
+            />
+          </div>
+        </div>
+
       </main>
 
       {/* FOOTER */}
