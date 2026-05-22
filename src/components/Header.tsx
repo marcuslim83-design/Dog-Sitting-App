@@ -1,9 +1,9 @@
 import React from 'react';
-import { Dog, Briefcase, UserCircle2, ArrowLeftRight, HeartHandshake, Sparkles } from 'lucide-react';
+import { Dog, Briefcase, UserCircle2, ArrowLeftRight, HeartHandshake, Sparkles, MessageSquare } from 'lucide-react';
 
 interface HeaderProps {
-  currentRole: 'owner' | 'sitter';
-  setRole: (role: 'owner' | 'sitter') => void;
+  currentRole: 'owner' | 'sitter' | 'social';
+  setRole: (role: 'owner' | 'sitter' | 'social') => void;
   userEmail: string;
   onOpenRegister: () => void;
 }
@@ -28,7 +28,7 @@ export default function Header({ currentRole, setRole, userEmail, onOpenRegister
           <button
             id="role-switch-owner"
             onClick={() => setRole('owner')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+            className={`flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
               currentRole === 'owner'
                 ? 'bg-white text-violet-700 shadow-xs ring-1 ring-violet-150'
                 : 'text-slate-500 hover:text-slate-800'
@@ -42,7 +42,7 @@ export default function Header({ currentRole, setRole, userEmail, onOpenRegister
           <button
             id="role-switch-sitter"
             onClick={() => setRole('sitter')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+            className={`flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
               currentRole === 'sitter'
                 ? 'bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white shadow-xs'
                 : 'text-slate-500 hover:text-slate-800'
@@ -51,6 +51,20 @@ export default function Header({ currentRole, setRole, userEmail, onOpenRegister
             <Briefcase className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Sitter Dashboard</span>
             <span className="sm:hidden">Sitter</span>
+          </button>
+
+          <button
+            id="role-switch-social"
+            onClick={() => setRole('social')}
+            className={`flex items-center space-x-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
+              currentRole === 'social'
+                ? 'bg-fuchsia-100 text-fuchsia-700 shadow-xs ring-1 ring-fuchsia-200'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Social Forum</span>
+            <span className="sm:hidden">Social</span>
           </button>
         </div>
 

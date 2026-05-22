@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase, saveEntry, getEntries, safeParse } from './lib/supabaseClient';
+import { DiscussionEmbed } from 'disqus-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search,
@@ -41,9 +42,30 @@ import cutePoodleBuddy from './assets/images/cute_poodle_buddy_1779420400102.png
 
 const USER_EMAIL = 'marcus.lim83@gmail.com';
 
+class DisqusForum extends React.Component<any> {
+  // @ts-ignore
+  props: any;
+
+  render() {
+    return (
+      <DiscussionEmbed
+        shortname='dog-sitting-1'
+        config={
+          {
+            url: this.props.article.url,
+            identifier: this.props.article.id,
+            title: this.props.article.title,
+            language: 'zh_TW' //e.g. for Traditional Chinese (Taiwan)
+          }
+        }
+      />
+    );
+  }
+}
+
 export default function App() {
   // Global React States synced with client localStorage for instant persistence!
-  const [role, setRole] = useState<'owner' | 'sitter'>('owner');
+  const [role, setRole] = useState<'owner' | 'sitter' | 'social'>('owner');
 
   const [loading, setLoading] = useState(true);
   const [sitters, setSitters] = useState<SitterProfile[]>(INITIAL_SITTERS);
@@ -765,7 +787,7 @@ export default function App() {
             </div>
 
           </div>
-        ) : (
+        ) : role === 'sitter' ? (
           /* SITTER MODE DASHBOARD */
           <SitterDashboard
             mySitterProfile={mySitterProfile}
@@ -775,6 +797,69 @@ export default function App() {
             onDeclineBooking={handleDeclineBooking}
             onCompleteBooking={handleCompleteBooking}
           />
+        ) : (
+          /* SOCIAL BOARD WITH DISQUS EMBED FORUM */
+          <div className="space-y-8 text-left">
+            {/* Header / Hero */}
+            <div className="bg-gradient-to-tr from-fuchsia-50 to-violet-50 rounded-3xl p-6 sm:p-8 border border-fuchsia-100/80 flex flex-col md:flex-row items-center justify-between gap-6 overflow-hidden">
+              <div className="space-y-3 md:max-w-[65%]">
+                <span className="bg-gradient-to-r from-fuchsia-600 to-violet-600 text-white text-[10px] uppercase font-mono font-black tracking-widest px-2.5 py-1 rounded-full inline-block">
+                  💬 BarkSitter Social Board
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight leading-tight">
+                  Welcome to our <span className="bg-gradient-to-r from-fuchsia-600 to-violet-600 bg-clip-text text-transparent font-sans">Pet Community</span> Discussion
+                </h2>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                  Join our Traditional Chinese (Taiwan - zh_TW) moderated Disqus forum board! Discuss dog nutrition, best dog walking parks, share funny puppy pictures, or establish matches with active local pet parents and pet sitters.
+                </p>
+              </div>
+              <div className="text-6xl p-4 bg-white/80 rounded-2xl shadow-xs border border-white/60 select-none animate-bounce">
+                💬
+              </div>
+            </div>
+
+            {/* Core Community Hot Topics Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white border border-slate-100 p-5 rounded-3xl shadow-xs hover:border-violet-200 transition">
+                <span className="text-2xl">🧸</span>
+                <h4 className="text-sm font-bold text-slate-800 mt-3">Anxiety Tips in New Stays</h4>
+                <p className="text-xs text-slate-400 mt-1 leading-normal">
+                  How do you deal when a puppy cries the first night? Read community solutions and tips on calming strategies.
+                </p>
+              </div>
+              <div className="bg-white border border-slate-100 p-5 rounded-3xl shadow-xs hover:border-violet-200 transition">
+                <span className="text-2xl">🥕</span>
+                <h4 className="text-sm font-bold text-slate-800 mt-3">Healthy Homemade Treats</h4>
+                <p className="text-xs text-slate-400 mt-1 leading-normal">
+                  Quick recipes for dog biscuits with sweet potato and pumpkin! Safe and verified by neighborhood dog sitters.
+                </p>
+              </div>
+              <div className="bg-white border border-slate-100 p-5 rounded-3xl shadow-xs hover:border-violet-200 transition">
+                <span className="text-2xl">🌳</span>
+                <h4 className="text-sm font-bold text-slate-800 mt-3">Great Dog Parks</h4>
+                <p className="text-xs text-slate-400 mt-1 leading-normal">
+                  Find fully fenced spaces with water fountains and agility courses. Connect with other dog walkers in the area.
+                </p>
+              </div>
+            </div>
+
+            {/* Disqus Discussion Thread Section */}
+            <div className="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-xs">
+              <div className="border-b border-slate-100 pb-4 mb-6">
+                <h3 className="text-base font-extrabold text-slate-800 font-sans tracking-tight">Community Forum Feed (Disqus Board)</h3>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">Please sign in to Disqus or use your local thread to post questions and make friend requests.</p>
+              </div>
+              <div className="min-h-[400px]">
+                <DisqusForum
+                  article={{
+                    url: typeof window !== 'undefined' ? window.location.href : 'https://barksitter-local-sit.example.com',
+                    id: 'barksitter-social-forum-main',
+                    title: 'BarkSitter Pet Community Forum Board'
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         )}
 
       </main>
