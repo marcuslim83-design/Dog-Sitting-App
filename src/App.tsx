@@ -30,6 +30,7 @@ import BookingModal from './components/BookingModal';
 import SitterDashboard from './components/SitterDashboard';
 import OwnerDashboard from './components/OwnerDashboard';
 import PersonalityMatcher from './components/PersonalityMatcher';
+import SitterChatView from './components/SitterChatView';
 
 // Cute Dog Image Assets
 import happyDogsHero from './assets/images/happy_dogs_hero_1779420349432.png';
@@ -82,6 +83,7 @@ export default function App() {
   const [selectedSitterId, setSelectedSitterId] = useState<string | null>(null);
   const [detailSitterId, setDetailSitterId] = useState<string | null>(null);
   const [bookingSitterId, setBookingSitterId] = useState<string | null>(null);
+  const [chattingSitterId, setChattingSitterId] = useState<string | null>(null);
 
   // Quick reservation success highlight overlay
   const [showBookingSuccess, setShowBookingSuccess] = useState(false);
@@ -199,6 +201,7 @@ export default function App() {
   // Keep track of which sitter details modal to open
   const detailSitter = sitters.find((s) => s.id === detailSitterId);
   const bookingSitter = sitters.find((s) => s.id === bookingSitterId);
+  const chattingSitter = sitters.find((s) => s.id === chattingSitterId);
 
   return (
     <div className="min-h-screen bg-[#faf9f6] text-slate-800 flex flex-col font-sans selection:bg-fuchsia-100 selection:text-fuchsia-900 leading-normal antialiased">
@@ -516,6 +519,7 @@ export default function App() {
                 onAddReview={handleAddReview}
                 onCancelBooking={handleCancelBooking}
                 userEmail={USER_EMAIL}
+                onChatWithSitter={setChattingSitterId}
               />
             </div>
 
@@ -564,6 +568,10 @@ export default function App() {
             setBookingSitterId(detailSitter.id);
             setDetailSitterId(null);
           }}
+          onChat={() => {
+            setChattingSitterId(detailSitter.id);
+            setDetailSitterId(null);
+          }}
           userEmail={USER_EMAIL}
         />
       )}
@@ -575,6 +583,15 @@ export default function App() {
           onClose={() => setBookingSitterId(null)}
           onConfirmBooking={handleConfirmNewBooking}
           userEmail={USER_EMAIL}
+        />
+      )}
+
+      {/* Secure interactive premium chat screen view */}
+      {chattingSitter && (
+        <SitterChatView
+          sitter={chattingSitter}
+          userEmail={USER_EMAIL}
+          onClose={() => setChattingSitterId(null)}
         />
       )}
 

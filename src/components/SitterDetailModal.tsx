@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Star, MapPin, Calendar, Heart, ShieldAlert, BadgeInfo, Check, Send } from 'lucide-react';
+import { X, Star, MapPin, Calendar, Heart, ShieldAlert, BadgeInfo, Check, Send, MessageSquare } from 'lucide-react';
 import { SitterProfile, Review, Booking } from '../types';
 
 interface SitterDetailModalProps {
@@ -7,6 +7,7 @@ interface SitterDetailModalProps {
   reviews: Review[];
   onClose: () => void;
   onBook: () => void;
+  onChat: () => void;
   userEmail: string;
 }
 
@@ -15,6 +16,7 @@ export default function SitterDetailModal({
   reviews,
   onClose,
   onBook,
+  onChat,
   userEmail
 }: SitterDetailModalProps) {
   const sitterReviews = reviews.filter((r) => r.sitterId === sitter.id);
@@ -165,13 +167,23 @@ export default function SitterDetailModal({
             <p className="text-xs text-slate-700 font-bold">{sitter.location} and nearby areas</p>
           </div>
 
-          <button
-            id="book-sitter-cta"
-            onClick={onBook}
-            className="w-full sm:w-auto bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white text-xs font-black px-6 py-3 rounded-2xl transition hover:translate-y-[-1px] shadow-lg shadow-violet-600/20"
-          >
-            Request Booking Details
-          </button>
+          <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+            <button
+              onClick={onChat}
+              className="bg-white hover:bg-slate-100 border border-slate-250 text-slate-700 text-xs font-bold px-4 py-3 rounded-2xl transition flex items-center space-x-1.5 shadow-3xs cursor-pointer"
+            >
+              <MessageSquare className="h-4 w-4 text-violet-600" />
+              <span>Chat & Enquire</span>
+            </button>
+
+            <button
+              id="book-sitter-cta"
+              onClick={onBook}
+              className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700 text-white text-xs font-black px-5 py-3 rounded-2xl transition hover:translate-y-[-1px] shadow-lg shadow-violet-600/20 cursor-pointer"
+            >
+              Request Booking Details
+            </button>
+          </div>
         </div>
 
       </div>

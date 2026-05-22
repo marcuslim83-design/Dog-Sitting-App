@@ -12,6 +12,7 @@ interface OwnerDashboardProps {
   onAddReview: (review: Omit<Review, 'id' | 'date'>) => void;
   onCancelBooking: (id: string) => void;
   userEmail: string;
+  onChatWithSitter?: (sitterId: string) => void;
 }
 
 export default function OwnerDashboard({
@@ -20,7 +21,8 @@ export default function OwnerDashboard({
   reviews,
   onAddReview,
   onCancelBooking,
-  userEmail
+  userEmail,
+  onChatWithSitter
 }: OwnerDashboardProps) {
   // Inbox / Chat simulation state
   const [activeChatSitterId, setActiveChatSitterId] = useState<string | null>(null);
@@ -211,8 +213,14 @@ export default function OwnerDashboard({
                         
                         {/* Instant chat link */}
                         <button
-                          onClick={() => setActiveChatSitterId(b.sitterId)}
-                          className="flex items-center text-xs font-bold text-violet-600 hover:text-violet-800 space-x-1.5"
+                          onClick={() => {
+                            if (onChatWithSitter) {
+                              onChatWithSitter(b.sitterId);
+                            } else {
+                              setActiveChatSitterId(b.sitterId);
+                            }
+                          }}
+                          className="flex items-center text-xs font-bold text-violet-600 hover:text-violet-800 space-x-1.5 cursor-pointer"
                         >
                           <MessageSquare className="h-4 w-4" />
                           <span>Chat with Sitter</span>
@@ -276,10 +284,16 @@ export default function OwnerDashboard({
                   return (
                     <button
                       key={s.id}
-                      onClick={() => setActiveChatSitterId(s.id)}
+                      onClick={() => {
+                        if (onChatWithSitter) {
+                          onChatWithSitter(s.id);
+                        } else {
+                          setActiveChatSitterId(s.id);
+                        }
+                      }}
                       className={`w-full p-2.5 rounded-xl flex items-center space-x-2 text-left transition ${
-                        activeChatSitterId === s.id ? 'bg-fuchsia-50/50 border-l-4 border-fuchsia-500' : 'hover:bg-slate-50'
-                      }`}
+                        activeChatSitterId === s.id ? 'bg-fuchsia-50/50 border-l-4 border-fuchsia-500 font-bold' : 'hover:bg-slate-50/50'
+                      } cursor-pointer`}
                     >
                       <span className="text-xl">{s.avatar}</span>
                       <div className="truncate">
